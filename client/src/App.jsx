@@ -3,18 +3,18 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
 import AlakhSir from "./components/AlakhSir";
-import { ContextProvider } from "./context/ContextApi";
+import { ContextApiProvider } from "./context/ContextApi";
 
 function App() {
   return (
-    <ContextProvider>
+    <ContextApiProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/alakh" element={<AlakhSir />} />
         </Routes>
       </Router>
-    </ContextProvider>
+    </ContextApiProvider>
   );
 }
 

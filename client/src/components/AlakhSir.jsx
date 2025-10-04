@@ -1,17 +1,24 @@
 // src/components/AlakhSir.jsx
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../context/ContextApi";
-import { startRecording, stopRecording } from "../utils/speechUtils";
+import { FaMicrophone, FaMicrophoneSlash } from "react-icons/fa";
 
 export default function AlakhSir() {
-  const { messages, addMessage, isRecording, setIsRecording } = useContext(AppContext);
+  const {
+    messages,
+    isRecording,
+    isSpeaking,
+    startVoiceInput,
+    stopVoiceInput,
+    sendMessage,
+    stopAudio,
+  } = useContext(AppContext);
+
   const userVideoRef = useRef(null);
   const alakhVideoRef = useRef(null);
   const [inputText, setInputText] = useState("");
-  const [responseAudio, setResponseAudio] = useState(null);
 
   useEffect(() => {
-    // Start user's webcam
     async function startCamera() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (userVideoRef.current) {
@@ -21,106 +28,93 @@ export default function AlakhSir() {
     startCamera();
   }, []);
 
-  const handleVoiceInput = async () => {
-    if (!isRecording) {
-      setIsRecording(true);
-      await startRecording();
-    } else {
-      setIsRecording(false);
-      const text = await stopRecording();
-      setInputText(text);
-      sendMessage(text);
-    }
-  };
-
-  const sendMessage = async (text) => {
-    addMessage({ sender: "user", text });
-
-    const res = await fetch("http://localhost:5000/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
-    });
-
-    const data = await res.json();
-    addMessage({ sender: "teacher", text: data.reply });
-
-    // Play Alakh Sir video + TTS audio simultaneously
-    if (alakhVideoRef.current) {
-      alakhVideoRef.current.play();
-    }
-    const audio = new Audio(`data:audio/wav;base64,${data.audio}`);
-    setResponseAudio(audio);
-    audio.play();
-  };
-
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Left column: Alakh Sir video */}
-      <div className="w-7/10 relative bg-black">
+    <div className="flex flex-col md:flex-row h-screen bg-gradient-to-br from-blue-100 to-purple-200 font-sans">
+      <div className="md:w-7/10 w-full relative bg-black flex items-center justify-center">
         <video
           ref={alakhVideoRef}
-          src="/alakhSirVideo.mp4"
-          className="w-full h-full object-cover"
-          controls={false}
+          src="/alakhsir.mp4"
+          className="w-full h-full object-cover rounded-lg shadow-lg"
+          autoPlay
+          loop
+          muted
         />
-        <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white p-2 rounded">
+        <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 text-white p-3 rounded-lg text-lg font-semibold shadow-md">
           Alakh Sir
         </div>
       </div>
 
-      {/* Right column: user video + chat */}
-      <div className="w-3/10 flex flex-col p-2 space-y-2">
-        {/* Top user video */}
-        <div className="h-1/3 bg-black rounded-lg overflow-hidden relative">
+      <div className="md:w-3/10 w-full flex flex-col p-4 space-y-4">
+        <div className="h-48 bg-black rounded-lg overflow-hidden relative flex items-center justify-center shadow-md">
           <video
             ref={userVideoRef}
             autoPlay
             muted
             className="w-full h-full object-cover"
           />
-          <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+          <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded shadow">
             You
           </div>
         </div>
 
-        {/* Chat box */}
-        <div className="h-2/3 bg-white rounded-lg shadow-lg p-2 flex flex-col">
-          <h2 className="text-lg font-bold mb-2">Chat</h2>
-          <div className="flex-1 overflow-y-auto space-y-2 border p-2 rounded bg-gray-50">
+        <div className="flex-1 bg-white rounded-2xl shadow-xl p-4 flex flex-col">
+          <h2 className="text-xl font-bold mb-3 text-gray-700">Chat</h2>
+          <div className="flex-1 overflow-y-auto space-y-3 border p-3 rounded-xl bg-gray-50 transition-all" style={{scrollBehavior: 'smooth'}}>
             {messages.map((msg, idx) => (
-              <div key={idx} className={msg.sender === "user" ? "text-right" : "text-left"}>
-                <p
-                  className={`inline-block p-2 rounded ${
-                    msg.sender === "user" ? "bg-blue-400 text-white" : "bg-gray-300"
-                  }`}
+              <div key={idx} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[70%] p-3 rounded-2xl shadow-md text-base break-words transition-all
+                    ${msg.sender === "user"
+                      ? "bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-br-none"
+                      : "bg-gray-200 text-gray-800 rounded-bl-none"}
+                  `}
                 >
                   {msg.text}
-                </p>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Controls */}
-          <div className="mt-2 flex space-x-2">
+          <div className="mt-4 flex items-center space-x-3">
             <button
-              className={`px-4 py-2 rounded ${
-                isRecording ? "bg-red-500" : "bg-green-500"
-              } text-white`}
-              onClick={handleVoiceInput}
+              className={`w-20 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-200
+                ${isRecording ? "bg-red-500 animate-pulse" : "bg-green-500 hover:bg-green-600"}
+                text-white text-2xl focus:outline-none`}
+              onClick={() => {
+                if (!isRecording) {
+                  stopAudio();
+                  startVoiceInput();
+                } else {
+                  stopVoiceInput();
+                }
+              }}
+              title={isRecording ? "Stop Mic" : "Start Mic"}
             >
-              {isRecording ? "Stop" : "Start"} Voice
+              {isRecording ? <FaMicrophoneSlash /> : <FaMicrophone />}
             </button>
+
             <input
               type="text"
-              className="border p-2 rounded flex-1"
+              className="border p-3 rounded-xl flex-1 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Type a message..."
+              onKeyDown={e => {
+                if (e.key === 'Enter' && inputText.trim()) {
+                  sendMessage(inputText);
+                  setInputText("");
+                }
+              }}
             />
+
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-              onClick={() => sendMessage(inputText)}
+              className="px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl shadow font-semibold text-base transition-all"
+              onClick={() => {
+                if (inputText.trim()) {
+                  sendMessage(inputText);
+                  setInputText("");
+                }
+              }}
             >
               Send
             </button>
