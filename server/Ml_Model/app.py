@@ -1,58 +1,45 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from chatmodel import get_physics_answer
 from gtts import gTTS
 import os
+import re
+import base64
+from io import BytesIO
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Temporary directory for audio files
-AUDIO_DIR = "/Users/anantagrawal140gmail.com/Desktop/DevilTutor/Web Product/client/src/Audio_temp"
-os.makedirs(AUDIO_DIR, exist_ok=True)
-
-# Root route
 @app.route("/", methods=["GET"])
 def home():
     return "<h2>Physics Assistant API is running. Use POST /ask to ask questions.</h2>"
 
-# Ask route
 @app.route("/ask", methods=["POST"])
 def ask():
     data = request.json
     question = data.get("question", "").strip()
-    
+
     if not question:
         return jsonify({"error": "Please provide a question"}), 400
 
-    # Get text answer from the model
     answer = get_physics_answer(question)
 
-    # Clean the text: remove *, \n, and extra whitespace for gTTS
-    import re
+    # Clean answer for TTS
     clean_answer = re.sub(r'[\*\n]', ' ', answer).strip()
-    clean_answer = re.sub(r'\s+', ' ', clean_answer)  # collapse multiple spaces
+    clean_answer = re.sub(r'\s+', ' ', clean_answer)
 
-    # Generate audio using gTTS
+    # Generate TTS and store in memory
     tts = gTTS(text=clean_answer, lang="en")
-    audio_filename = os.path.join(AUDIO_DIR, "answer.mp3")
-    tts.save(audio_filename)
+    mp3_fp = BytesIO()
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
 
-    # Return JSON response with text and audio file path
+    # Encode audio to base64
+    audio_base64 = base64.b64encode(mp3_fp.read()).decode("utf-8")
+
     return jsonify({
         "question": question,
-        "answer_text": answer,       # original text (with formatting)
-        "answer_audio": audio_filename
+        "answer_text": answer,
+        "answer_audio": audio_base64
     })
 
-
-# Route to serve audio file
-@app.route("/audio/<filename>", methods=["GET"])
-def serve_audio(filename):
-    file_path = os.path.join(AUDIO_DIR, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path, mimetype="audio/mpeg")
-    return jsonify({"error": "File not found"}), 404
-
-# Run Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

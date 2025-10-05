@@ -114,10 +114,10 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // 🎧 Play audio from backend
-const playAudio = (audioPath) => {
+const playAudio = (base64Audio) => {
   try {
-    if (!audioPath) {
-      console.warn("No audio path provided");
+    if (!base64Audio) {
+      console.warn("No audio data provided");
       return;
     }
 
@@ -126,9 +126,18 @@ const playAudio = (audioPath) => {
       audioRef.current.currentTime = 0;
     }
 
-    const audioURL = audioPath.startsWith("http")
-      ? audioPath
-      : `http://localhost:5000/${audioPath.replace(/^\/+/, "")}`;
+    // Convert Base64 string to Blob
+    const byteCharacters = atob(base64Audio.split(",").pop()); // remove any prefix
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "audio/mpeg" });
+
+    // Create temporary URL
+    const audioURL = URL.createObjectURL(blob);
 
     const audio = new Audio(audioURL);
     audioRef.current = audio;
@@ -141,17 +150,21 @@ const playAudio = (audioPath) => {
 
     audio.onended = () => {
       setIsSpeaking(false);
+      URL.revokeObjectURL(audioURL);
     };
 
     audio.onerror = (err) => {
       console.error("Audio playback error:", err);
       setIsSpeaking(false);
+      URL.revokeObjectURL(audioURL);
     };
   } catch (e) {
     console.error("Audio playback error:", e);
     setIsSpeaking(false);
   }
 };
+
+
 
 
   // 🧠 Stop AI speech instantly
