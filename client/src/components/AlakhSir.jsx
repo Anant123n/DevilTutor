@@ -17,6 +17,16 @@ export default function AlakhSir() {
   const alakhVideoRef = useRef(null);
   const [inputText, setInputText] = useState("");
 
+  useEffect(() => {
+    if (alakhVideoRef.current) {
+      if (isSpeaking) {
+        alakhVideoRef.current.play();
+      } else {
+        alakhVideoRef.current.pause();
+      }
+    }
+  }, [isSpeaking]);
+
   // === CAMERA INIT ===
   useEffect(() => {
     async function startCamera() {
@@ -90,12 +100,15 @@ export default function AlakhSir() {
       <div className="md:w-7/10 w-full relative bg-black flex items-center justify-center">
         <video
           ref={alakhVideoRef}
-          src="/alakhsir.mp4"
+          src="/video.mp4"
           className="w-full h-full object-cover rounded-lg shadow-lg"
           autoPlay
           loop
           muted
+
+          
         />
+
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 text-white p-3 rounded-lg text-lg font-semibold shadow-md">
           Alakh Sir
         </div>
@@ -115,27 +128,28 @@ export default function AlakhSir() {
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-2xl shadow-xl p-4 flex flex-col">
+        <div className="flex-1  bg-white rounded-2xl shadow-xl p-4 flex flex-col">
           <h2 className="text-xl font-bold mb-3 text-gray-700">Chat</h2>
 
+          {/* Chat messages container */}
           <div
-            className="flex-1 overflow-y-auto space-y-3 border p-3 rounded-xl bg-gray-50 transition-all"
+            className=" flex flex-col overflow-y-auto space-y-3 border p-3 rounded-xl bg-gray-50 transition-all min-h-80"
             style={{ scrollBehavior: "smooth" }}
           >
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`flex ${
+                className={`flex flex-wrap ${
                   msg.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`max-w-[70%] p-3 rounded-2xl shadow-md text-base break-words transition-all
-                    ${
-                      msg.sender === "user"
-                        ? "bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-br-none"
-                        : "bg-gray-200 text-gray-800 rounded-bl-none"
-                    }`}
+                ${
+                  msg.sender === "user"
+                    ? "bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-br-none"
+                    : "bg-gray-200 text-gray-800 rounded-bl-none"
+                }`}
                 >
                   {msg.text}
                 </div>
@@ -147,12 +161,12 @@ export default function AlakhSir() {
           <div className="mt-4 flex items-center space-x-3">
             <button
               className={`w-20 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-200
-                ${
-                  isRecording
-                    ? "bg-red-500 animate-pulse"
-                    : "bg-green-500 hover:bg-green-600"
-                }
-                text-white text-2xl focus:outline-none`}
+            ${
+              isRecording
+                ? "bg-red-500 animate-pulse"
+                : "bg-green-500 hover:bg-green-600"
+            }
+            text-white text-2xl focus:outline-none`}
               onClick={() => {
                 if (!isRecording) startVoiceInput();
                 else stopVoiceInput();

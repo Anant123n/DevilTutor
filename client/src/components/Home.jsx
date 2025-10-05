@@ -6,9 +6,15 @@ export default function Home() {
   const navigate = useNavigate();
 
   const teachers = [
-    { name: "Alakh Sir", path: "/alakh" },
-    // Add more teachers here
-  ];
+  { name: "Jenny Mam For Physics", path: "/alakh" },
+  { name: "Rahul Sir For Mathematics", path: "/rahul" },
+  { name: "Priya Mam For Chemistry", path: "/priya" },
+  { name: "Amit Sir For Biology", path: "/amit" },
+  { name: "Sneha Mam For English", path: "/sneha" },
+  { name: "Vikram Sir For Computer Science", path: "/vikram" },
+  { name: "Anita Mam For History", path: "/anita" },
+];
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
