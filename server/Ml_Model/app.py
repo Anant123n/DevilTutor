@@ -7,7 +7,7 @@ import os
 app = Flask(__name__)
 
 # Temporary directory for audio files
-AUDIO_DIR = "audio_temp"
+AUDIO_DIR = "/Users/anantagrawal140gmail.com/Desktop/DevilTutor/Web Product/client/src/Audio_temp"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
 # Root route
@@ -55,4 +55,4 @@ def serve_audio(filename):
 
 # Run Flask app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)

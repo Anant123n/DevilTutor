@@ -1,18 +1,27 @@
 // server/controllers/chatController.js
-import { spawn } from "child_process";
-import path from "path";
+import fetch from "node-fetch";
 
-export const handleChat = async (req, res) => {
+export const askTutor = async (req, res) => {
   try {
-    const { message } = req.body;
-    console.log("Received message:", message);
-    // Return a dummy reply and dummy audio (null)
-    res.json({
-      reply: `Echo: ${message}`,
-      audio: null,
+    const { question } = req.body;
+
+    const response = await fetch("http://127.0.0.1:5001/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
     });
+
+    // 👇 Handle non-OK responses
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Python API error:", text);
+      return res.status(500).json({ error: "Python API returned an error", details: text });
+    }
+
+    const data = await response.json(); // ✅ Only if it's valid JSON
+    return res.json(data);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Error contacting Python API:", err);
+    res.status(500).json({ error: "Failed to contact Python API" });
   }
 };

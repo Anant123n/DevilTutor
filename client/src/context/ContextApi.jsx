@@ -1,88 +1,173 @@
-// src/context/ContextApi.jsx
-import React, { createContext, useState, useRef } from "react";
+import React, { createContext, useState, useRef, useContext } from "react";
 
 export const AppContext = createContext();
+export const useAppContext = () => useContext(AppContext);
 
-export const ContextApiProvider = ({ children }) => {
+export const AppContextProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
   const recognitionRef = useRef(null);
-  const interimTranscriptRef = useRef("");
+  const audioRef = useRef(null);
 
-  const addMessage = (msg) => {
-    setMessages((prev) => [...prev, msg]);
-  };
-
-  const stopAudio = () => {
-    setIsSpeaking(false);
-  };
-
-  const playAudio = (base64Audio) => {
-    stopAudio();
-    const audio = new Audio(`data:audio/wav;base64,${base64Audio}`);
-    setIsSpeaking(true);
-    audio.play();
-    audio.onended = () => {
-      setIsSpeaking(false);
-    };
-  };
-
+  // 🎙️ Start mic listening
   const startVoiceInput = () => {
     if (isRecording) return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
+      alert("Speech Recognition not supported on this browser");
       return;
     }
+
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-    interimTranscriptRef.current = "";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let userSpeech = "";
+
+    recognition.onstart = () => {
+      console.log("🎙️ Mic started...");
+      setIsRecording(true);
+    };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      interimTranscriptRef.current = transcript;
-    };
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-    };
-    recognition.onend = () => {
-      setIsRecording(false);
-      // When stopped, process the transcript
-      const text = interimTranscriptRef.current.trim();
-      if (text) {
-        addMessage({ sender: "user", text });
-        sendMessage(text);
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join("");
+
+      userSpeech = transcript.trim();
+
+      // Live update to input display
+      if (userSpeech) {
+        setMessages((prev) => [
+          ...prev.filter((m) => !m.temp),
+          { sender: "user", text: userSpeech, temp: true },
+        ]);
       }
     };
+
+    recognition.onend = async () => {
+      console.log("🎤 Mic stopped.");
+      setIsRecording(false);
+
+      if (userSpeech) {
+        // Remove temporary message
+        setMessages((prev) => prev.filter((m) => !m.temp));
+
+        // Add final user message
+        setMessages((prev) => [...prev, { sender: "user", text: userSpeech }]);
+
+        // Send to backend
+        await sendMessage(userSpeech);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.error("Speech recognition error:", e);
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
     recognition.start();
-    setIsRecording(true);
   };
 
+  // 🛑 Stop mic manually
   const stopVoiceInput = () => {
-    if (recognitionRef.current && isRecording) {
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
       setIsRecording(false);
     }
   };
 
-  const sendMessage = async (text) => {
-    if (!text.trim()) return;
-    addMessage({ sender: "user", text });
+  // 🚀 Send user question to backend
+  const sendMessage = async (question) => {
     try {
-      const res = await fetch("http://localhost:5000/api/chat", {
+      const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ question }),
       });
-      const data = await res.json();
-      addMessage({ sender: "teacher", text: data.reply });
-      if (data.audio) playAudio(data.audio);
+
+      const data = await response.json();
+
+      console.log("✅ Backend response:", data);
+
+      setMessages((prev) => [
+        ...prev,
+        { sender: "ai", text: data.answer_text },
+      ]);
+
+      // 🎧 Play AI's response audio
+      playAudio(data.answer_audio);
     } catch (err) {
-      console.error("Chat API error:", err);
+      console.error("❌ Error contacting backend:", err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: "ai", text: "Server error. Please try again." },
+      ]);
+    }
+  };
+
+  // 🎧 Play audio from backend
+const playAudio = (audioPath) => {
+  try {
+    if (!audioPath) {
+      console.warn("No audio path provided");
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    const audioURL = audioPath.startsWith("http")
+      ? audioPath
+      : `http://localhost:5000/${audioPath.replace(/^\/+/, "")}`;
+
+    const audio = new Audio(audioURL);
+    audioRef.current = audio;
+    setIsSpeaking(true);
+
+    audio.play().catch((err) => {
+      console.error("Audio play failed:", err);
+      setIsSpeaking(false);
+    });
+
+    audio.onended = () => {
+      setIsSpeaking(false);
+    };
+
+    audio.onerror = (err) => {
+      console.error("Audio playback error:", err);
+      setIsSpeaking(false);
+    };
+  } catch (e) {
+    console.error("Audio playback error:", e);
+    setIsSpeaking(false);
+  }
+};
+
+
+  // 🧠 Stop AI speech instantly
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsSpeaking(false);
+  };
+
+  // 🎙️ If AI is talking and user speaks → stop AI, listen again
+  const interruptAI = () => {
+    if (isSpeaking) {
+      stopAudio();
+      startVoiceInput();
     }
   };
 
@@ -96,6 +181,7 @@ export const ContextApiProvider = ({ children }) => {
         stopVoiceInput,
         sendMessage,
         stopAudio,
+        interruptAI,
       }}
     >
       {children}

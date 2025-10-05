@@ -17,7 +17,7 @@ physics_prompt = PromptTemplate(
     template=(
         "You are a knowledgeable and friendly PHYSICS teacher. "
         "Explain the following question step by step like you are teaching a student. "
-        "Generate at max 100 words in output. Be clear and simple.\n\n"
+        "Generate at max 60 words in output. Be clear and simple.\n\n"
         "Question: {question}\n\n"
         "Answer:"
     )

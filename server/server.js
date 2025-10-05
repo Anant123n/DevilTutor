@@ -1,16 +1,20 @@
-// server/server.js
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
+import path from "path";
 import chatRoutes from "./routes/chatRoutes.js";
 
 const app = express();
+const __dirname = path.resolve();
 
 app.use(cors());
-app.use(bodyParser.json({ limit: "50mb" }));
+app.use(express.json());
 
-app.use("/api/chat", chatRoutes);
-app.use("/api/stt", chatRoutes); // Add this line to mount /api/stt
+// 🔹 Serve Audio_temp folder as static files
+app.use("/audio_temp", express.static(path.join(__dirname, "client", "src", "Audio_temp")));
 
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// 🔹 API routes
+app.use("/api", chatRoutes);
+
+app.listen(5000, () =>
+  console.log("Server running on http://localhost:5000")
+);
