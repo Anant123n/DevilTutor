@@ -2,11 +2,11 @@ import os
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
+from dotenv import load_dotenv
 
+#os.environ["GOOGLE_API_KEY"] = "AIzaSyBqd6j98w-frhNGNHRwWaMJ745GxqZUWKY"
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBqd6j98w-frhNGNHRwWaMJ745GxqZUWKY"
-
-
+load_dotenv()
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0.7
