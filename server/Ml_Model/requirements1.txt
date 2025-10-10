@@ -1,0 +1,17 @@
+# Environment and configuration
+python-dotenv
+
+# Core LangChain framework
+langchain
+
+# LangGraph for workflow orchestration and persistence
+langgraph
+
+# Google Gemini integration for LangChain
+langchain-google-genai
+
+# Typing utilities
+typing-extensions
+
+# Optional: helpful logging
+loguru

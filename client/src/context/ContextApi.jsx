@@ -85,59 +85,46 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // 🚀 Send user question to backend
-  const sendMessage = async (question) => {
-    try {
-      const response = await fetch("http://localhost:5000/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
+ const sendMessage = async (question) => {
+  try {
+    const response = await fetch("http://localhost:5000/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      console.log("✅ Backend response:", data);
+    console.log("✅ Backend response:", data);
 
-      setMessages((prev) => [
-        ...prev,
-        { sender: "ai", text: data.answer_text },
-      ]);
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: question },
+      { sender: "ai", text: data.answer_text },
+    ]);
 
-      // 🎧 Play AI's response audio
-      playAudio(data.answer_audio);
-    } catch (err) {
-      console.error("❌ Error contacting backend:", err);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "ai", text: "Server error. Please try again." },
-      ]);
-    }
-  };
+    playAudio(); // Play fixed file
+  } catch (err) {
+    console.error("❌ Error contacting backend:", err);
+    setMessages((prev) => [
+      ...prev,
+      { sender: "ai", text: "Server error. Please try again." },
+    ]);
+  }
+};
+
 
   // 🎧 Play audio from backend
-const playAudio = (base64Audio) => {
+const playAudio = () => {
   try {
-    if (!base64Audio) {
-      console.warn("No audio data provided");
-      return;
-    }
-
+    // Pause if audio is already playing
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    // Convert Base64 string to Blob
-    const byteCharacters = atob(base64Audio.split(",").pop()); // remove any prefix
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: "audio/mpeg" });
-
-    // Create temporary URL
-    const audioURL = URL.createObjectURL(blob);
+    // The audio file path inside public folder
+    const audioURL = "/output.mp3"; // public folder files are served relative to root
 
     const audio = new Audio(audioURL);
     audioRef.current = audio;
@@ -150,19 +137,19 @@ const playAudio = (base64Audio) => {
 
     audio.onended = () => {
       setIsSpeaking(false);
-      URL.revokeObjectURL(audioURL);
     };
 
     audio.onerror = (err) => {
       console.error("Audio playback error:", err);
       setIsSpeaking(false);
-      URL.revokeObjectURL(audioURL);
     };
   } catch (e) {
     console.error("Audio playback error:", e);
     setIsSpeaking(false);
   }
 };
+
+
 
 
 

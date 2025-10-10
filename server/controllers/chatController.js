@@ -1,4 +1,3 @@
-// server/controllers/chatController.js
 import fetch from "node-fetch";
 
 export const askTutor = async (req, res) => {
@@ -11,15 +10,20 @@ export const askTutor = async (req, res) => {
       body: JSON.stringify({ question }),
     });
 
-    // 👇 Handle non-OK responses
     if (!response.ok) {
       const text = await response.text();
       console.error("Python API error:", text);
       return res.status(500).json({ error: "Python API returned an error", details: text });
     }
 
-    const data = await response.json(); // ✅ Only if it's valid JSON
-    return res.json(data);
+    const data = await response.json();
+
+    // Only send question and answer text
+    res.json({
+      question: data.question,
+      answer_text: data.answer_text
+    });
+
   } catch (err) {
     console.error("Error contacting Python API:", err);
     res.status(500).json({ error: "Failed to contact Python API" });
