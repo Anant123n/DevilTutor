@@ -1,15 +1,15 @@
-name: Daily repository maintenance
+name: Six-hour repository maintenance
 
 on:
   schedule:
-    - cron: "35 3 * * *"
+    - cron: "35 3,9,15,21 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: daily-repository-maintenance
+  group: six-hour-repository-maintenance
   cancel-in-progress: false
 
 jobs:
@@ -36,5 +36,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: record daily maintenance"
+          git commit -m "chore: record scheduled maintenance"
           git push origin "HEAD:${GITHUB_REF_NAME}"
