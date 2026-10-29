@@ -533,7 +533,8 @@ jobs:
           )
 
           # Pick a random commit message from the available options
-          RANDOM_MSG="${MESSAGES[$RANDOM \%${#MESSAGES[@]}]}"
+          RANDOM_INDEX=$(( RANDOM % ${#MESSAGES[@]} ))
+          RANDOM_MSG="${MESSAGES[$RANDOM_INDEX]}"
 
           git commit -m "$RANDOM_MSG"
           git push origin "HEAD:${GITHUB_REF_NAME}"
